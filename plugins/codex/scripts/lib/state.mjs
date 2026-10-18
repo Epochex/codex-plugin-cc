@@ -160,6 +160,7 @@ export function listJobsAcrossWorkspaces() {
   }
 
   const jobs = [];
+  const stateDirsByWorkspace = new Map();
   for (const entry of fs.readdirSync(stateRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) {
       continue;
@@ -181,7 +182,12 @@ export function listJobsAcrossWorkspaces() {
         // A state file is only authoritative for its own workspace. Do not
         // trust a record that points at another directory merely because it
         // was found beneath the shared plugin-data root.
-        if (path.resolve(resolveStateDir(job.workspaceRoot)) !== path.resolve(stateDir)) {
+        let workspaceStateDir = stateDirsByWorkspace.get(job.workspaceRoot);
+        if (workspaceStateDir === undefined) {
+          workspaceStateDir = path.resolve(resolveStateDir(job.workspaceRoot));
+          stateDirsByWorkspace.set(job.workspaceRoot, workspaceStateDir);
+        }
+        if (workspaceStateDir !== path.resolve(stateDir)) {
           continue;
         }
         jobs.push(job);
